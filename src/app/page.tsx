@@ -163,12 +163,22 @@ export default function Page() {
             )}
           </div>
           <aside className="lg:border-l lg:pl-6 min-w-0">
-            <Tabs defaultValue="context">
-              <TabsList className="w-full">
-                <TabsTrigger className="flex-1" value="context">Story Context</TabsTrigger>
-                <TabsTrigger className="flex-1" value="versions">Version History</TabsTrigger>
+            <Tabs defaultValue="context" className="w-full">
+              <TabsList className="w-full bg-transparent border-b border-gray-200">
+                <TabsTrigger 
+                  className="flex-1 data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 bg-transparent" 
+                  value="context"
+                >
+                  Story Context
+                </TabsTrigger>
+                <TabsTrigger 
+                  className="flex-1 data-[state=active]:border-b-2 data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 bg-transparent" 
+                  value="versions"
+                >
+                  Version History
+                </TabsTrigger>
               </TabsList>
-              <TabsContent value="context">
+              <TabsContent value="context" className="mt-4">
                 {story && (
                   <ContextualPrompt
                     value={story.contextualPrompt || ''}
@@ -180,7 +190,7 @@ export default function Page() {
                   />
                 )}
               </TabsContent>
-              <TabsContent value="versions">
+              <TabsContent value="versions" className="mt-4">
                 {story && (
                   <VersionHistory
                     versions={story.versions || []}
