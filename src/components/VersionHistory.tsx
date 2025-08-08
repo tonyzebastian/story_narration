@@ -2,6 +2,7 @@
 
 import type { StoryVersion } from '@/types';
 import { formatDate } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 interface VersionHistoryProps {
   versions: StoryVersion[];
@@ -28,13 +29,14 @@ export default function VersionHistory({ versions, currentVersionId, onRevert }:
                   {formatDate(v.timestamp)}
                 </div>
               </div>
-              <button
-                className="border rounded px-2 py-1 text-xs disabled:opacity-50"
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => onRevert(v.id)}
                 disabled={currentVersionId === v.id}
               >
                 {currentVersionId === v.id ? 'Current' : 'Revert'}
-              </button>
+              </Button>
             </div>
           ))}
       </div>

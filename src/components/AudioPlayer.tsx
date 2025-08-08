@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { Button } from '@/components/ui/button';
 
 interface AudioPlayerProps {
   audioBlob?: Blob | null;
@@ -31,15 +32,19 @@ export default function AudioPlayer({ audioBlob, onGenerateAudio, isGenerating }
 
   return (
     <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border">
-      <button className="border rounded px-3 py-1 text-sm disabled:opacity-50" onClick={onGenerateAudio} disabled={isGenerating}>
+      <Button 
+        variant="outline" 
+        onClick={onGenerateAudio} 
+        disabled={isGenerating}
+      >
         {isGenerating ? 'Generating...' : 'Generate Audio'}
-      </button>
+      </Button>
 
       {audioBlob && (
         <>
-          <button className="border rounded px-3 py-1 text-sm" onClick={togglePlayback}>
+          <Button variant="outline" onClick={togglePlayback}>
             {isPlaying ? 'Pause' : 'Play'}
-          </button>
+          </Button>
           <div className="text-sm text-gray-600">{Math.floor(currentTime)}s / {Math.floor(duration)}s</div>
         </>
       )}

@@ -3,6 +3,13 @@
 import { useEffect, useState } from 'react';
 import { ElevenLabsClient } from '@/lib/elevenlabs';
 import type { Voice } from '@/types';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface VoiceSelectorProps {
   apiKey?: string;
@@ -34,19 +41,22 @@ export default function VoiceSelector({ apiKey, selectedVoiceId, onChange }: Voi
   return (
     <div className="space-y-2">
       <div className="text-sm font-medium">Voice</div>
-      <select
-        className="border rounded p-2 w-full"
+      <Select
         value={selectedVoiceId || ''}
-        onChange={(e) => onChange(e.target.value)}
+        onValueChange={onChange}
         disabled={!apiKey || isLoading}
       >
-        <option value="">{isLoading ? 'Loading...' : 'Select a voice'}</option>
-        {voices.map((v) => (
-          <option key={v.voice_id} value={v.voice_id}>
-            {v.name}
-          </option>
-        ))}
-      </select>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder={isLoading ? 'Loading...' : 'Select a voice'} />
+        </SelectTrigger>
+        <SelectContent>
+          {voices.map((v) => (
+            <SelectItem key={v.voice_id} value={v.voice_id}>
+              {v.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }

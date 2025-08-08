@@ -1,6 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 
 interface ContextualPromptProps {
   value: string;
@@ -23,9 +26,11 @@ export default function ContextualPrompt({ value, onChange, placeholder }: Conte
   };
 
   return (
-    <div className="border rounded-lg">
-      <div className="px-4 py-3 border-b text-sm font-medium">Story Context & Guidelines</div>
-      <div className="p-4 space-y-3">
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm font-medium">Story Context & Guidelines</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
         {!isEditing ? (
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
@@ -37,36 +42,26 @@ export default function ContextualPrompt({ value, onChange, placeholder }: Conte
                 </p>
               )}
             </div>
-            <button className="border rounded px-3 py-1 text-sm" onClick={() => setIsEditing(true)}>
+            <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
               {value ? 'Edit' : 'Add'}
-            </button>
+            </Button>
           </div>
         ) : (
           <div className="space-y-3">
-            <textarea
-              value={localValue}
-              onChange={(e) => setLocalValue(e.target.value)}
-              placeholder={placeholder}
-              className="w-full border rounded p-2 min-h-24"
-              rows={3}
-            />
+            <Textarea value={localValue} onChange={(e) => setLocalValue(e.target.value)} placeholder={placeholder} rows={3} />
             <div className="flex gap-2">
-              <button className="bg-black text-white rounded px-3 py-1 text-sm" onClick={handleSave}>
+              <Button size="sm" onClick={handleSave}>
                 Save
-              </button>
-              <button className="border rounded px-3 py-1 text-sm" onClick={handleCancel}>
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleCancel}>
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
         )}
 
-        <div className="text-xs text-gray-500">
-          <strong>Examples:</strong> "Keep the tone mysterious and dark", "Write in first person",
-          "Target young adult audience", "Maintain Victorian era language", etc.
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
