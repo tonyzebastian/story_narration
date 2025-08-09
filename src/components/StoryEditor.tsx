@@ -3,14 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import PromptBox from '@/components/PromptBox';
 import GenerateStoryDialog from '@/components/GenerateStoryDialog';
-import { Button } from '@/components/ui/button';
 import { OpenAIClient } from '@/lib/openai';
+import { debounce } from '@/lib/utils';
 
 interface StoryEditorProps {
   story: { id: string; content: string; contextualPrompt?: string };
   onStoryUpdate: (
     newContent: string,
-    meta: { type: string; prompt?: string; editedRange?: { start: number; end: number }; contextualPrompt?: string },
+    meta: { type: string; prompt?: string; editedRange?: { start: number; end: number }; contextualPrompt?: string; createVersion?: boolean },
   ) => Promise<void> | void;
   openaiApiKey?: string;
   contextualPrompt?: string;
@@ -25,31 +25,96 @@ export default function StoryEditor({ story, onStoryUpdate, openaiApiKey, contex
   const [candidateText, setCandidateText] = useState<string | null>(null);
   const [lastPrompt, setLastPrompt] = useState<string>('');
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
-  const [showEmptyOptions, setShowEmptyOptions] = useState(false);
+
   const [slashPromptPosition, setSlashPromptPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const [showSlashPrompt, setShowSlashPrompt] = useState(false);
   const [slashInsertPosition, setSlashInsertPosition] = useState<number>(0);
   const isActiveRef = useRef(true);
   const editorRef = useRef<HTMLDivElement>(null);
   const isInitializedRef = useRef(false);
+  const lastContentRef = useRef(story.content);
+  const lastStoryContentRef = useRef(story.content);
 
-  // Check if content is empty - also check the actual DOM content
-  const isEmpty = !story.content.trim() && (!editorRef.current || !editorRef.current.textContent?.trim());
+  const [showPlaceholder, setShowPlaceholder] = useState(true);
+
+  // Debounced version creation - creates version after user stops typing for 2 seconds
+  const debouncedCreateVersion = useCallback(
+    debounce((content: string) => {
+      if (content !== lastContentRef.current) {
+        onStoryUpdate(content, { type: 'user-input', createVersion: true });
+        lastContentRef.current = content;
+        lastStoryContentRef.current = content;
+      }
+    }, 2000),
+    [onStoryUpdate]
+  );
 
   const handleInput = useCallback(() => {
     // Update the story content when user types
     if (editorRef.current) {
       const newContent = editorRef.current.textContent || '';
+      
+      // Hide placeholder when user starts typing
+      if (newContent.trim() && showPlaceholder) {
+        setShowPlaceholder(false);
+      }
+      
       if (newContent !== story.content) {
+        // Update our tracking refs
+        lastContentRef.current = newContent;
+        lastStoryContentRef.current = newContent;
+        // Immediate update without version
         onStoryUpdate(newContent, { type: 'user-input' });
+        // Debounced version creation
+        debouncedCreateVersion(newContent);
       }
     }
-  }, [story.content, onStoryUpdate]);
+  }, [story.content, onStoryUpdate, debouncedCreateVersion, showPlaceholder]);
 
-  // Initialize editor content only once
+  // Initialize editor content and update when story content changes externally
   useEffect(() => {
-    if (editorRef.current && !isInitializedRef.current) {
-      editorRef.current.textContent = story.content;
+    if (editorRef.current) {
+      // Only update if this is a genuine external change (not from our own input)
+      if (story.content !== lastStoryContentRef.current) {
+        const currentEditorContent = editorRef.current.textContent || '';
+        if (currentEditorContent !== story.content) {
+          // Store current cursor position
+          const selection = window.getSelection();
+          const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+          const cursorOffset = range ? getTextOffset(editorRef.current, range.startContainer, range.startOffset) : 0;
+          
+          // Update content
+          editorRef.current.textContent = story.content;
+          
+          // Update placeholder visibility
+          setShowPlaceholder(!story.content.trim());
+          
+          // Restore cursor position if possible
+          if (cursorOffset <= story.content.length) {
+            const newRange = document.createRange();
+            const walker = document.createTreeWalker(editorRef.current, NodeFilter.SHOW_TEXT);
+            let currentNode: Node | null;
+            let currentOffset = 0;
+            
+            while ((currentNode = walker.nextNode())) {
+              const nodeLength = currentNode.textContent?.length || 0;
+              if (currentOffset + nodeLength >= cursorOffset) {
+                const nodeOffset = cursorOffset - currentOffset;
+                newRange.setStart(currentNode, Math.min(nodeOffset, nodeLength));
+                newRange.collapse(true);
+                selection?.removeAllRanges();
+                selection?.addRange(newRange);
+                break;
+              }
+              currentOffset += nodeLength;
+            }
+          }
+          
+          // Update our tracking refs
+          lastContentRef.current = story.content;
+          lastStoryContentRef.current = story.content;
+        }
+      }
       isInitializedRef.current = true;
     }
   }, [story.content]);
@@ -159,6 +224,7 @@ export default function StoryEditor({ story, onStoryUpdate, openaiApiKey, contex
         type: 'slash-insert',
         prompt,
         contextualPrompt,
+        createVersion: true,
       });
       
       // Update the editor content directly
@@ -191,6 +257,7 @@ export default function StoryEditor({ story, onStoryUpdate, openaiApiKey, contex
       prompt: lastPrompt,
       editedRange: selectionRange,
       contextualPrompt,
+      createVersion: true,
     });
     
     // Update the editor content directly
@@ -240,19 +307,38 @@ export default function StoryEditor({ story, onStoryUpdate, openaiApiKey, contex
     setShowGenerateDialog(true);
   };
 
-  const handleWriteOnMyOwn = () => {
-    setShowEmptyOptions(false);
-    // Focus the editor
-    if (editorRef.current) {
+  // Handle clicks on the empty area to focus the editor
+  const handleEmptyAreaClick = useCallback(() => {
+    if (editorRef.current && showPlaceholder) {
       editorRef.current.focus();
+      
+      // Ensure there's a text node to position cursor in
+      if (editorRef.current.childNodes.length === 0) {
+        editorRef.current.appendChild(document.createTextNode(''));
+      }
+      
+      // Position cursor at the very beginning
+      const range = document.createRange();
+      const selection = window.getSelection();
+      
+      // Find the first text node or create one
+      const firstNode = editorRef.current.firstChild || editorRef.current.appendChild(document.createTextNode(''));
+      
+      range.setStart(firstNode, 0);
+      range.collapse(true);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
     }
-  };
+  }, [showPlaceholder]);
+
+
 
   const handleStoryGenerated = async (generatedStory: string, storyContext: string) => {
     await onStoryUpdate(generatedStory, {
       type: 'ai-generated',
       prompt: 'Generate a basic story with AI',
       contextualPrompt: storyContext, // Save the story context
+      createVersion: true,
     });
     
     // Update the editor content directly
@@ -268,7 +354,7 @@ export default function StoryEditor({ story, onStoryUpdate, openaiApiKey, contex
       selection?.addRange(range);
     }
     
-    setShowEmptyOptions(false);
+    setShowPlaceholder(false);
   };
 
   // When popover closes, cancel/ignore any in-flight result
@@ -280,12 +366,12 @@ export default function StoryEditor({ story, onStoryUpdate, openaiApiKey, contex
     }
   }, [showPrompt, showSlashPrompt]);
 
-  // Show empty options when content is empty
+  // Update placeholder visibility when content changes
   useEffect(() => {
     const checkEmpty = () => {
       const isContentEmpty = !story.content.trim();
       const isDomEmpty = !editorRef.current?.textContent?.trim();
-      setShowEmptyOptions(isContentEmpty && isDomEmpty);
+      setShowPlaceholder(isContentEmpty && isDomEmpty);
     };
     
     checkEmpty();
@@ -294,47 +380,84 @@ export default function StoryEditor({ story, onStoryUpdate, openaiApiKey, contex
     return () => clearTimeout(timer);
   }, [story.content]);
 
+  // Focus editor and position cursor at beginning when it's empty
+  useEffect(() => {
+    if (showPlaceholder && editorRef.current) {
+      editorRef.current.focus();
+      
+      // Ensure there's a text node to position cursor in
+      if (editorRef.current.childNodes.length === 0) {
+        editorRef.current.appendChild(document.createTextNode(''));
+      }
+      
+      // Position cursor at the very beginning
+      const range = document.createRange();
+      const selection = window.getSelection();
+      
+      // Find the first text node or create one
+      const firstNode = editorRef.current.firstChild || editorRef.current.appendChild(document.createTextNode(''));
+      
+      range.setStart(firstNode, 0);
+      range.collapse(true);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    }
+  }, [showPlaceholder]);
+
   return (
     <div className="space-y-4">
       <div className="relative">
-        <div
-          ref={editorRef}
-          id="story-editor"
-          contentEditable
-          className="min-h-[calc(100vh-220px)] p-4 bg-white text-gray-900 whitespace-pre-wrap focus:outline-none"
-          style={{ 
-            maxWidth: '80ch',
-            lineHeight: '1.6',
-            fontFamily: 'sans-serif'
-          }}
-          onMouseUp={handleTextSelection}
-          onKeyDown={handleKeyDown}
-          onInput={handleInput}
-          suppressContentEditableWarning
-        />
+        <div className="relative flex justify-center min-h-[60vh]">
+          <div
+            ref={editorRef}
+            id="story-editor"
+            contentEditable
+            className="min-h-full p-4 bg-white text-gray-900 whitespace-pre-wrap focus:outline-none w-full"
+            style={{ 
+              maxWidth: '80ch',
+              lineHeight: '1.6',
+              fontFamily: 'sans-serif'
+            }}
+            onMouseUp={handleTextSelection}
+            onKeyDown={handleKeyDown}
+            onInput={handleInput}
+            suppressContentEditableWarning
+          />
 
-        {showEmptyOptions && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-95 z-10">
-            <div className="space-y-4 text-center">
-              <div className="text-lg font-medium text-gray-700">Start your story</div>
-              <div className="flex gap-3 justify-center">
-                <Button 
+          {showPlaceholder && (
+            <>
+              {/* Clickable overlay for the entire empty area */}
+              <div 
+                className="absolute inset-0 cursor-text"
+                onClick={handleEmptyAreaClick}
+              />
+              
+              {/* Placeholder text - positioned to match editor text exactly */}
+              <div 
+                className="absolute pointer-events-none text-gray-400 font-normal tracking-wide"
+                style={{ 
+                  top: '16px',  // p-4 = 16px
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  maxWidth: '80ch',
+                  width: 'calc(100% - 32px)', // Account for p-4 on both sides
+                  lineHeight: '1.6',
+                  fontFamily: 'sans-serif',
+                  paddingLeft: '16px',
+                  paddingRight: '16px'
+                }}
+              >
+                Start typing here or{' '}
+                <button
                   onClick={handleGenerateWithAI}
-                  className="px-6 py-2"
+                  className="underline hover:text-gray-600 transition-colors pointer-events-auto font-normal"
                 >
-                  Generate a basic story with AI
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={handleWriteOnMyOwn}
-                  className="px-6 py-2"
-                >
-                  Write on my own
-                </Button>
+                  generate a story
+                </button>
               </div>
-            </div>
-          </div>
-        )}
+            </>
+          )}
+        </div>
 
         {showPrompt && (
           <PromptBox

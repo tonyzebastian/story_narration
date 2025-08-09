@@ -8,6 +8,7 @@ out/
 dist/
 .vercel/
 .turbo/
+.kiro/
 
 # Logs
 npm-debug.log*
