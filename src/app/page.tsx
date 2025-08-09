@@ -5,6 +5,7 @@ import StoryEditor from '@/components/StoryEditor';
 import Header from '@/components/Header';
 import BottomBar from '@/components/BottomBar';
 import ContextualPrompt from '@/components/ContextualPrompt';
+import WelcomeDialog from '@/components/WelcomeDialog';
 import { ElevenLabsClient } from '@/lib/elevenlabs';
 import { db } from '@/lib/database';
 import type { AppSettings, Story, AudioFile } from '@/types';
@@ -37,6 +38,7 @@ export default function Page() {
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [currentVersionIndex, setCurrentVersionIndex] = useState(0);
   const [audioGenerationCount, setAudioGenerationCount] = useState(0);
+  const [showWelcomeDialog, setShowWelcomeDialog] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -69,6 +71,13 @@ export default function Page() {
       }
     };
     void init();
+
+    // Show welcome dialog after 2 seconds
+    const welcomeTimer = setTimeout(() => {
+      setShowWelcomeDialog(true);
+    }, 2000);
+
+    return () => clearTimeout(welcomeTimer);
   }, []);
 
   const openaiKey = useMemo(() => settings?.openaiApiKey, [settings]);
@@ -211,16 +220,20 @@ export default function Page() {
               />
             )}
           </div>
-          <aside className="lg:border-l lg:pl-6 lg:pr-4 md:pr-6 py-6 min-w-0 h-full overflow-hidden">
-            {story && (
-              <ContextualPrompt
-                value={story.contextualPrompt || ''}
-                onChange={async (newVal) => {
-                  setStory((s) => (s ? { ...s, contextualPrompt: newVal } : s));
-                  await handleStoryUpdate(story.content, { type: 'contextual-prompt-update', contextualPrompt: newVal });
-                }}
-              />
-            )}
+          <aside className="lg:border-l lg:pl-6 lg:pr-4 md:pr-6 min-w-0 overflow-hidden">
+            <div className="py-6 h-full overflow-hidden" style={{ height: 'calc(100% - 0px)' }}>
+              {story && (
+                <div className="h-full overflow-hidden">
+                  <ContextualPrompt
+                    value={story.contextualPrompt || ''}
+                    onChange={async (newVal) => {
+                      setStory((s) => (s ? { ...s, contextualPrompt: newVal } : s));
+                      await handleStoryUpdate(story.content, { type: 'contextual-prompt-update', contextualPrompt: newVal });
+                    }}
+                  />
+                </div>
+              )}
+            </div>
           </aside>
         </div>
       </div>
@@ -240,6 +253,12 @@ export default function Page() {
         storyId={story?.id}
         audioGenerationCount={audioGenerationCount}
         storyContent={story?.content}
+      />
+
+      {/* Welcome Dialog */}
+      <WelcomeDialog 
+        open={showWelcomeDialog} 
+        onOpenChange={setShowWelcomeDialog} 
       />
     </div>
   );

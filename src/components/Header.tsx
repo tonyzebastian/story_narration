@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { Trash2, Undo2, Redo2, Settings, Twitter, X } from 'lucide-react';
+import { Trash2, Undo2, Redo2, Settings, Twitter, Github, X } from 'lucide-react';
 
 interface HeaderProps {
   appName: string;
@@ -105,6 +105,18 @@ export default function Header({
               title="Follow on Twitter"
             >
               <Twitter className="h-4 w-4" />
+            </a>
+          </Button>
+          
+          {/* GitHub Link */}
+          <Button variant="outline" size="sm" asChild>
+            <a
+              href="https://github.com/tonyzeb/story-narration-app"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="View on GitHub"
+            >
+              <Github className="h-4 w-4" />
             </a>
           </Button>
           
