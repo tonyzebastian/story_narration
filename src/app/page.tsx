@@ -52,21 +52,55 @@ export default function Page() {
       const storedStories = await db.stories.toArray();
       if (storedStories.length > 0) {
         const firstStory = storedStories[0];
-        // If the story has content, use it; otherwise create a new empty story
-        if (firstStory.content && firstStory.content.trim()) {
-          setStory(firstStory);
-          // Set current version index to the latest version
-          setCurrentVersionIndex(Math.max(0, (firstStory.versions?.length || 1) - 1));
-        } else {
-          // Create a new empty story
-          const newStory = { ...defaultStory, id: crypto.randomUUID() };
-          await db.stories.put(newStory);
-          setStory(newStory);
-          setCurrentVersionIndex(0);
+        
+        // Check if we have a more recent backup in localStorage
+        const backup = localStorage.getItem('scriptflow-backup');
+        if (backup) {
+          try {
+            const backupData = JSON.parse(backup);
+            const backupTime = new Date(backupData.timestamp);
+            const storyTime = new Date(firstStory.updatedAt);
+            
+            // If backup is more recent, use it
+            if (backupTime > storyTime) {
+              console.log('Using more recent localStorage backup');
+              firstStory.content = backupData.content || firstStory.content;
+              firstStory.contextualPrompt = backupData.contextualPrompt || firstStory.contextualPrompt;
+              // Save the restored content back to database
+              await db.stories.put(firstStory);
+            }
+          } catch (error) {
+            console.error('Failed to parse localStorage backup:', error);
+          }
         }
+        
+        console.log('Loading existing story:', { 
+          id: firstStory.id, 
+          contentLength: firstStory.content?.length || 0,
+          contextualPrompt: firstStory.contextualPrompt 
+        });
+        setStory(firstStory);
+        // Set current version index to the latest version
+        setCurrentVersionIndex(Math.max(0, (firstStory.versions?.length || 1) - 1));
       } else {
-        await db.stories.put(defaultStory);
-        setStory(defaultStory);
+        // Check if we have a backup to restore from
+        const backup = localStorage.getItem('scriptflow-backup');
+        let newStory = { ...defaultStory, id: crypto.randomUUID() };
+        
+        if (backup) {
+          try {
+            const backupData = JSON.parse(backup);
+            console.log('Restoring from localStorage backup');
+            newStory.content = backupData.content || '';
+            newStory.contextualPrompt = backupData.contextualPrompt || '';
+          } catch (error) {
+            console.error('Failed to parse localStorage backup:', error);
+          }
+        }
+        
+        console.log('Creating new story with backup data');
+        await db.stories.put(newStory);
+        setStory(newStory);
         setCurrentVersionIndex(0);
       }
     };
@@ -80,7 +114,59 @@ export default function Page() {
     return () => clearTimeout(welcomeTimer);
   }, []);
 
+  // Save content before page unload (refresh/close)
+  useEffect(() => {
+    const handleBeforeUnload = async () => {
+      if (story) {
+        // Force save current content
+        await db.stories.put(story);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [story]);
+
+  // Auto-save story content every 10 seconds
+  useEffect(() => {
+    if (!story) return;
+
+    const autoSaveInterval = setInterval(async () => {
+      try {
+        await db.stories.put(story);
+        // Also save to localStorage as backup
+        localStorage.setItem('scriptflow-backup', JSON.stringify({
+          content: story.content,
+          contextualPrompt: story.contextualPrompt,
+          timestamp: new Date().toISOString()
+        }));
+        console.log('Auto-saved story content');
+      } catch (error) {
+        console.error('Auto-save failed:', error);
+      }
+    }, 10000); // Save every 10 seconds
+
+    return () => clearInterval(autoSaveInterval);
+  }, [story]);
+
+  // Save to localStorage on every content change as immediate backup
+  useEffect(() => {
+    if (story) {
+      localStorage.setItem('scriptflow-backup', JSON.stringify({
+        content: story.content,
+        contextualPrompt: story.contextualPrompt,
+        timestamp: new Date().toISOString()
+      }));
+    }
+  }, [story?.content, story?.contextualPrompt]);
+
   const openaiKey = useMemo(() => settings?.openaiApiKey, [settings]);
+
+  const handleContextualPromptChange = async (newContext: string) => {
+    if (!story) return;
+    setStory((s) => (s ? { ...s, contextualPrompt: newContext } : s));
+    await handleStoryUpdate(story.content, { type: 'contextual-prompt-update', contextualPrompt: newContext });
+  };
 
   const handleStoryUpdate = async (
     newContent: string,
@@ -94,8 +180,13 @@ export default function Page() {
       updatedAt: new Date(),
     };
     setStory(updated);
+    console.log('Saving story update:', { 
+      type: meta.type, 
+      contentLength: newContent.length,
+      contextualPrompt: updated.contextualPrompt 
+    });
     await db.stories.put(updated);
-    
+
     // Only create version if explicitly requested or for non-user-input types
     if (meta.createVersion || meta.type !== 'user-input') {
       const versionId = crypto.randomUUID();
@@ -108,12 +199,12 @@ export default function Page() {
         editPrompt: meta.prompt,
         editedRange: meta.editedRange,
       };
-      
+
       await db.versions.put(newVersion as any);
       updated.currentVersionId = versionId;
       updated.versions = [...(updated.versions || []), newVersion as any];
       await db.stories.put(updated);
-      
+
       // Update current version index to the latest
       setCurrentVersionIndex(updated.versions.length - 1);
     }
@@ -127,7 +218,7 @@ export default function Page() {
       const voiceId = settings.selectedVoice || '21m00Tcm4TlvDq8ikWAM';
       const blob = await el.textToSpeech(story.content, voiceId);
       setAudioBlob(blob);
-      
+
       // Save to database
       const audioFile = {
         id: crypto.randomUUID(),
@@ -196,7 +287,7 @@ export default function Page() {
     <div className="h-screen flex flex-col">
       {/* Header */}
       <Header
-        appName={process.env.NEXT_PUBLIC_APP_NAME || 'Story Narration App'}
+        appName={process.env.NEXT_PUBLIC_APP_NAME || 'ScriptFlow'}
         openaiKey={settings?.openaiApiKey}
         elevenlabsKey={settings?.elevenlabsApiKey}
         onSaveKeys={handleSaveKeys}
@@ -205,6 +296,7 @@ export default function Page() {
         canGoForward={story ? currentVersionIndex < story.versions.length - 1 : false}
         onGoBack={handleGoBack}
         onGoForward={handleGoForward}
+        onShowWelcome={() => setShowWelcomeDialog(true)}
       />
 
       {/* Main content area - text area and sidebar */}
@@ -217,6 +309,7 @@ export default function Page() {
                 onStoryUpdate={handleStoryUpdate}
                 openaiApiKey={openaiKey}
                 contextualPrompt={story.contextualPrompt}
+                onContextualPromptChange={handleContextualPromptChange}
               />
             )}
           </div>
@@ -226,10 +319,7 @@ export default function Page() {
                 <div className="h-full overflow-hidden">
                   <ContextualPrompt
                     value={story.contextualPrompt || ''}
-                    onChange={async (newVal) => {
-                      setStory((s) => (s ? { ...s, contextualPrompt: newVal } : s));
-                      await handleStoryUpdate(story.content, { type: 'contextual-prompt-update', contextualPrompt: newVal });
-                    }}
+                    onChange={handleContextualPromptChange}
                   />
                 </div>
               )}
@@ -256,9 +346,9 @@ export default function Page() {
       />
 
       {/* Welcome Dialog */}
-      <WelcomeDialog 
-        open={showWelcomeDialog} 
-        onOpenChange={setShowWelcomeDialog} 
+      <WelcomeDialog
+        open={showWelcomeDialog}
+        onOpenChange={setShowWelcomeDialog}
       />
     </div>
   );

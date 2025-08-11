@@ -14,9 +14,10 @@ interface StoryEditorProps {
   ) => Promise<void> | void;
   openaiApiKey?: string;
   contextualPrompt?: string;
+  onContextualPromptChange?: (context: string) => void;
 }
 
-export default function StoryEditor({ story, onStoryUpdate, openaiApiKey, contextualPrompt }: StoryEditorProps) {
+export default function StoryEditor({ story, onStoryUpdate, openaiApiKey, contextualPrompt, onContextualPromptChange }: StoryEditorProps) {
   const [selectedText, setSelectedText] = useState('');
   const [selectionRange, setSelectionRange] = useState<{ start: number; end: number }>({ start: 0, end: 0 });
   const [showPrompt, setShowPrompt] = useState(false);
@@ -121,22 +122,62 @@ export default function StoryEditor({ story, onStoryUpdate, openaiApiKey, contex
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === '/') {
-      e.preventDefault();
       const selection = window.getSelection();
       if (selection && editorRef.current) {
-        const range = selection.getRangeAt(0);
-        const insertPosition = getTextOffset(editorRef.current, range.startContainer, range.startOffset);
-        setSlashInsertPosition(insertPosition);
-        
-        // Position the prompt popover near the cursor
-        const rect = range.getBoundingClientRect();
-        const scrollY = window.scrollY || document.documentElement.scrollTop;
-        const scrollX = window.scrollX || document.documentElement.scrollLeft;
-        setSlashPromptPosition({ 
-          top: rect.bottom + scrollY + 8, 
-          left: Math.min(rect.left + scrollX, window.innerWidth - 320) 
-        });
-        setShowSlashPrompt(true);
+        // Let the '/' character appear first
+        setTimeout(() => {
+          const range = selection.getRangeAt(0);
+          const insertPosition = getTextOffset(editorRef.current!, range.startContainer, range.startOffset);
+          setSlashInsertPosition(insertPosition - 1); // Account for the '/' we just inserted
+          
+          // Position the prompt popover near the cursor
+          let rect = range.getBoundingClientRect();
+          
+          // If we don't have a proper rect (empty content), use the editor's position
+          if (rect.width === 0 && rect.height === 0) {
+            const editorRect = editorRef.current!.getBoundingClientRect();
+            rect = {
+              ...rect,
+              top: editorRect.top + 20, // Add some padding from top
+              left: editorRect.left + 16, // Add some padding from left
+              bottom: editorRect.top + 40
+            };
+          }
+          
+          const scrollY = window.scrollY || document.documentElement.scrollTop;
+          const scrollX = window.scrollX || document.documentElement.scrollLeft;
+          setSlashPromptPosition({ 
+            top: rect.bottom + scrollY + 8, 
+            left: Math.min(rect.left + scrollX, window.innerWidth - 320) 
+          });
+          
+          // Remove the '/' character we just inserted
+          const currentContent = editorRef.current!.textContent || '';
+          const newContent = currentContent.slice(0, insertPosition) + currentContent.slice(insertPosition + 1);
+          editorRef.current!.textContent = newContent;
+          
+          // Restore cursor position
+          const newRange = document.createRange();
+          const walker = document.createTreeWalker(editorRef.current!, NodeFilter.SHOW_TEXT);
+          let currentNode: Node | null;
+          let currentOffset = 0;
+          
+          // Find the correct position to place cursor
+          while ((currentNode = walker.nextNode())) {
+            const nodeLength = currentNode.textContent?.length || 0;
+            if (currentOffset + nodeLength >= insertPosition) {
+              const nodeOffset = insertPosition - currentOffset;
+              newRange.setStart(currentNode, Math.min(nodeOffset, nodeLength));
+              newRange.collapse(true);
+              selection.removeAllRanges();
+              selection.addRange(newRange);
+              break;
+            }
+            currentOffset += nodeLength;
+          }
+          
+          setShowSlashPrompt(true);
+        }, 0);
       }
     }
   }, []);
@@ -199,6 +240,44 @@ export default function StoryEditor({ story, onStoryUpdate, openaiApiKey, contex
       if (isActiveRef.current) setIsGenerating(false);
     }
   };
+
+  // Helper function to remove the '/' character from the editor
+  const removeSlashCharacter = useCallback(() => {
+    if (editorRef.current && slashInsertPosition >= 0) {
+      const currentContent = editorRef.current.textContent || '';
+      // Check if there's a '/' at the slash position
+      if (currentContent[slashInsertPosition] === '/') {
+        const newContent = 
+          currentContent.substring(0, slashInsertPosition) + 
+          currentContent.substring(slashInsertPosition + 1);
+        
+        editorRef.current.textContent = newContent;
+        
+        // Update the story content
+        onStoryUpdate(newContent, { type: 'user-input' });
+        
+        // Restore cursor position
+        const range = document.createRange();
+        const selection = window.getSelection();
+        const walker = document.createTreeWalker(editorRef.current, NodeFilter.SHOW_TEXT);
+        let currentNode: Node | null;
+        let currentOffset = 0;
+        
+        while ((currentNode = walker.nextNode())) {
+          const nodeLength = currentNode.textContent?.length || 0;
+          if (currentOffset + nodeLength >= slashInsertPosition) {
+            const nodeOffset = slashInsertPosition - currentOffset;
+            range.setStart(currentNode, Math.min(nodeOffset, nodeLength));
+            range.collapse(true);
+            selection?.removeAllRanges();
+            selection?.addRange(range);
+            break;
+          }
+          currentOffset += nodeLength;
+        }
+      }
+    }
+  }, [slashInsertPosition, onStoryUpdate]);
 
   const runSlashGeneration = async (prompt: string) => {
     if (!openaiApiKey) return;
@@ -366,6 +445,13 @@ export default function StoryEditor({ story, onStoryUpdate, openaiApiKey, contex
     }
   }, [showPrompt, showSlashPrompt]);
 
+  // Remove slash character when slash prompt closes
+  useEffect(() => {
+    if (!showSlashPrompt) {
+      removeSlashCharacter();
+    }
+  }, [showSlashPrompt, removeSlashCharacter]);
+
   // Update placeholder visibility when content changes
   useEffect(() => {
     const checkEmpty = () => {
@@ -447,13 +533,14 @@ export default function StoryEditor({ story, onStoryUpdate, openaiApiKey, contex
                   paddingRight: '16px'
                 }}
               >
-                Start typing here or{' '}
+                Start your story here… or{' '}
                 <button
                   onClick={handleGenerateWithAI}
                   className="underline hover:text-gray-600 transition-colors pointer-events-auto font-normal"
                 >
-                  generate a story
+                  Generate a story
                 </button>
+                {' '}to let AI spark the first draft.
               </div>
             </>
           )}
@@ -468,6 +555,7 @@ export default function StoryEditor({ story, onStoryUpdate, openaiApiKey, contex
             onApply={applyCandidate}
             onRetry={retryGeneration}
             onCancel={() => setShowPrompt(false)}
+            apiKey={openaiApiKey}
           />
         )}
 
@@ -479,8 +567,12 @@ export default function StoryEditor({ story, onStoryUpdate, openaiApiKey, contex
             onGenerate={runSlashGeneration}
             onApply={() => setShowSlashPrompt(false)}
             onRetry={() => runSlashGeneration(lastPrompt)}
-            onCancel={() => setShowSlashPrompt(false)}
+            onCancel={() => {
+              removeSlashCharacter();
+              setShowSlashPrompt(false);
+            }}
             isSlashMode={true}
+            apiKey={openaiApiKey}
           />
         )}
       </div>
@@ -490,6 +582,8 @@ export default function StoryEditor({ story, onStoryUpdate, openaiApiKey, contex
         onOpenChange={setShowGenerateDialog}
         onStoryGenerated={handleStoryGenerated}
         apiKey={openaiApiKey}
+        contextualPrompt={contextualPrompt}
+        onContextualPromptChange={onContextualPromptChange}
       />
     </div>
   );

@@ -1,9 +1,66 @@
 import './globals.css';
 import type { Metadata } from 'next';
 
+const appName = 'ScriptFlow';
+const appDescription = 'Create and edit stories with AI assistance, then bring them to life with professional voice narration using OpenAI GPT and ElevenLabs text-to-speech.';
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://scriptflow.vercel.app';
+
 export const metadata: Metadata = {
-  title: process.env.NEXT_PUBLIC_APP_NAME || 'Story Narration App',
-  description: 'Create stories with GPT and narrate with ElevenLabs',
+  title: {
+    default: appName,
+    template: `%s | ${appName}`,
+  },
+  description: appDescription,
+  keywords: [
+    'story creation',
+    'AI writing',
+    'text to speech',
+    'narration',
+    'OpenAI',
+    'ElevenLabs',
+    'voice synthesis',
+    'creative writing',
+    'storytelling',
+    'AI assistant'
+  ],
+  authors: [{ name: 'ScriptFlow' }],
+  creator: 'ScriptFlow',
+  publisher: 'ScriptFlow',
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  metadataBase: new URL(appUrl),
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: appUrl,
+    title: appName,
+    description: appDescription,
+    siteName: appName,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: appName,
+    description: appDescription,
+    creator: '@scriptflow',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({

@@ -8,7 +8,7 @@ export class StoryDatabase extends Dexie {
   settings!: Table<AppSettings, string>;
 
   constructor() {
-    super('StoryNarrationApp');
+    super('ScriptFlowApp');
 
     this.version(1).stores({
       stories: 'id, title, createdAt, updatedAt',

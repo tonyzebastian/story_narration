@@ -29,17 +29,14 @@ export default function ContextualPrompt({ value, onChange, placeholder }: Conte
     <div className="h-full overflow-hidden mb-64">
       <div className="mb-3">
         <h3 className="text-sm font-medium text-gray-900">Context for AI</h3>
-        <p className="text-xs text-gray-600">
-          Shared as context with each request sent to OpenAI.
-        </p>
       </div>
       <Textarea
         ref={textareaRef}
         value={localValue}
         onChange={(e) => setLocalValue(e.target.value)}
         onBlur={handleBlur}
-        placeholder={placeholder || "Guidelines and context that will influence all AI edits"}
-        className="w-full h-full max-h-96 resize-none text-xs tracking-wide shadow-none border-gray-200 hover:border-gray-300 focus:border-gray-400 focus:ring-0 focus-visible:ring-0 focus-visible:outline-none transition-colors "
+        placeholder={placeholder || "Give AI extra context like style, tone, pacing, audience etc."}
+        className="w-full h-full max-h-96 resize-none shadow-none border-gray-200 hover:border-gray-300 focus:border-gray-400 focus:ring-0 focus-visible:ring-0 focus-visible:outline-none transition-colors"
 
       />
     </div>

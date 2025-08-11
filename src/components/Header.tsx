@@ -16,6 +16,7 @@ interface HeaderProps {
   canGoForward?: boolean;
   onGoBack?: () => void;
   onGoForward?: () => void;
+  onShowWelcome?: () => void;
 }
 
 export default function Header({ 
@@ -27,7 +28,8 @@ export default function Header({
   canGoBack = false,
   canGoForward = false,
   onGoBack,
-  onGoForward
+  onGoForward,
+  onShowWelcome
 }: HeaderProps) {
   const [showSettings, setShowSettings] = useState(false);
   const [oai, setOai] = useState(openaiKey);
@@ -68,7 +70,12 @@ export default function Header({
   return (
     <header className="sticky top-0 z-20 bg-white border-b">
       <div className="w-full px-4 md:px-6 py-3 flex items-center justify-between gap-4">
-        <div className="text-lg font-semibold">{appName}</div>
+        <button 
+          onClick={onShowWelcome}
+          className="text-lg font-semibold hover:text-gray-700 transition-colors cursor-pointer"
+        >
+          {appName}
+        </button>
         <div className="flex items-center gap-2 relative">
           {/* Version Navigation */}
           <div className="flex items-center gap-1">
@@ -111,7 +118,7 @@ export default function Header({
           {/* GitHub Link */}
           <Button variant="outline" size="sm" asChild>
             <a
-              href="https://github.com/tonyzeb/story-narration-app"
+              href="https://github.com/tonyzebastian/story_narration"
               target="_blank"
               rel="noopener noreferrer"
               title="View on GitHub"
@@ -162,24 +169,26 @@ export default function Header({
 
                 {/* Action Button */}
                 {onClearDatabase && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      if (confirm('Are you sure you want to clear all data and API keys? This action cannot be undone.')) {
-                        setOai('');
-                        setElv('');
-                        onClearDatabase();
-                        setShowSettings(false);
-                        setShowToast(true);
-                        setTimeout(() => setShowToast(false), 3000);
-                      }
-                    }}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Clear All Data
-                  </Button>
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (confirm('Are you sure you want to clear all data and API keys? This action cannot be undone.')) {
+                          setOai('');
+                          setElv('');
+                          onClearDatabase();
+                          setShowSettings(false);
+                          setShowToast(true);
+                          setTimeout(() => setShowToast(false), 3000);
+                        }
+                      }}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Clear All Data
+                    </Button>
+                  </div>
                 )}
               </CardContent>
             </Card>
