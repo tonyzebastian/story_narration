@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     siteName: appShortName,
     images: [
       {
-        url: '/opengraph-image.png',
+        url: `${appUrl}/opengraph-image.png`,
         width: 1200,
         height: 630,
         alt: 'ScriptFlow - AI-powered story creation and voice narration',
@@ -57,7 +57,10 @@ export const metadata: Metadata = {
     title: appName,
     description: appDescription,
     creator: '@scriptflow',
-    images: ['/twitter-image.png'],
+    images: {
+      url: `${appUrl}/twitter-image.png`,
+      alt: 'ScriptFlow - AI-powered story creation and voice narration',
+    },
   },
   robots: {
     index: true,
