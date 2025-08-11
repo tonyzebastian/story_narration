@@ -98,10 +98,79 @@ export default function Header({
           </div>
           
           {/* Settings Button */}
-          <Button variant="outline" size="sm" onClick={() => setShowSettings((s) => !s)}>
-            <Settings className="h-4 w-4 mr-1" />
-            Settings
-          </Button>
+          <div className="relative">
+            <Button variant="outline" size="sm" onClick={() => setShowSettings((s) => !s)}>
+              <Settings className="h-4 w-4 mr-1" />
+              Settings
+            </Button>
+            
+            {showSettings && (
+              <Card ref={popoverRef} className="absolute top-full right-0 mt-2 w-[400px] z-50 shadow-lg">
+                <CardContent className="space-y-4 p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-medium text-gray-900">Settings</div>
+                    <button
+                      onClick={() => setShowSettings(false)}
+                      className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                      title="Close"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                  
+                  {/* API Keys Section */}
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <div className="space-y-1">
+                        <div className="text-xs font-medium text-gray-600">OpenAI API Key</div>
+                        <Input 
+                          type="password" 
+                          value={oai} 
+                          onChange={(e) => setOai(e.target.value)} 
+                          placeholder="sk-..." 
+                          className="font-mono text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-xs font-medium text-gray-600">ElevenLabs API Key</div>
+                        <Input 
+                          type="password" 
+                          value={elv} 
+                          onChange={(e) => setElv(e.target.value)} 
+                          placeholder="eleven-..." 
+                          className="font-mono text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Button */}
+                  {onClearDatabase && (
+                    <div className="flex justify-end">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (confirm('Are you sure you want to clear all data and API keys? This action cannot be undone.')) {
+                            setOai('');
+                            setElv('');
+                            onClearDatabase();
+                            setShowSettings(false);
+                            setShowToast(true);
+                            setTimeout(() => setShowToast(false), 3000);
+                          }
+                        }}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Clear All Data
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </div>
           
           {/* Twitter Link */}
           <Button variant="outline" size="sm" asChild>
@@ -126,73 +195,7 @@ export default function Header({
               <Github className="h-4 w-4" />
             </a>
           </Button>
-          
-          {showSettings && (
-            <Card ref={popoverRef} className="absolute top-full right-0 mt-2 w-[400px] z-50 shadow-lg">
-              <CardContent className="space-y-4 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm font-medium text-gray-900">Settings</div>
-                  <button
-                    onClick={() => setShowSettings(false)}
-                    className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
-                    title="Close"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-                
-                {/* API Keys Section */}
-                <div className="space-y-3">
-                  <div className="space-y-2">
-                    <div className="space-y-1">
-                      <div className="text-xs font-medium text-gray-600">OpenAI API Key</div>
-                      <Input 
-                        type="password" 
-                        value={oai} 
-                        onChange={(e) => setOai(e.target.value)} 
-                        placeholder="sk-..." 
-                        className="font-mono text-sm"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <div className="text-xs font-medium text-gray-600">ElevenLabs API Key</div>
-                      <Input 
-                        type="password" 
-                        value={elv} 
-                        onChange={(e) => setElv(e.target.value)} 
-                        placeholder="eleven-..." 
-                        className="font-mono text-sm"
-                      />
-                    </div>
-                  </div>
-                </div>
 
-                {/* Action Button */}
-                {onClearDatabase && (
-                  <div className="flex justify-end">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        if (confirm('Are you sure you want to clear all data and API keys? This action cannot be undone.')) {
-                          setOai('');
-                          setElv('');
-                          onClearDatabase();
-                          setShowSettings(false);
-                          setShowToast(true);
-                          setTimeout(() => setShowToast(false), 3000);
-                        }
-                      }}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Clear All Data
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
         </div>
       </div>
       
