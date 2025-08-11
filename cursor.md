@@ -1,7 +1,7 @@
-# Story Creation & Narration App – Technical Documentation
+# ScriptFlow – AI Story Creation & Voice Narration – Technical Documentation
 
 ## Overview
-Next.js app to draft/edit stories with OpenAI and generate narrations with ElevenLabs. It supports selection-based editing with contextual guidelines, version history, and audio playback with voice selection.
+ScriptFlow is a Next.js app that blends AI-powered writing assistance with ElevenLabs' lifelike voice narration. Users can write, refine, and hear their stories all in one place with selection-based editing, contextual guidelines, version history, and comprehensive audio playback controls.
 
 ## Implemented
 - Layout similar to the reference sample:
@@ -79,12 +79,14 @@ Next.js app to draft/edit stories with OpenAI and generate narrations with Eleve
     - Positions `PromptBox` just below selection using selection range bounding rect
     - **Enhanced**: Proper cursor management, selection preservation, auto-save on input
   - `PromptBox`: fixed, compact vertical card for instruction (no selected text/guidelines)
-    - **Enhanced**: Prevents selection loss when clicking inside popover
+    - **Enhanced**: ESC key support, loading states, API key warnings, proper button layouts
   - `VersionHistory`: list + revert; hydration-safe timestamps
     - **Enhanced**: Removed heading, flat design with hover revert buttons
   - `ContextualPrompt`: story-wide guidelines editor (sidebar)
     - **Enhanced**: Always editable with auto-save, no edit button or heading
-  - `BottomBar`: `VoiceSelector` + `AudioPlayer`
+  - `BottomBar`: `VoiceSelector` + `AudioPlayer` + Previous Generations with download
+    - **Enhanced**: Individual play/pause controls for each generation
+    - **Download**: External button for latest + individual buttons for each generation
   - `components/ui/*`: shadcn/ui primitives (including dialog, select)
 
 ### Source Layout
@@ -106,16 +108,16 @@ src/
 │  │  ├─ select.tsx
 │  │  ├─ tabs.tsx
 │  │  └─ textarea.tsx
-│  ├─ Header.tsx
-│  ├─ BottomBar.tsx
-│  ├─ StoryEditor.tsx
-│  ├─ PromptBox.tsx
-│  ├─ ContextualPrompt.tsx
+│  ├─ Header.tsx (with welcome dialog trigger)
+│  ├─ BottomBar.tsx (enhanced audio controls + downloads)
+│  ├─ StoryEditor.tsx (slash commands + enhanced editing)
+│  ├─ PromptBox.tsx (ESC support + loading states)
+│  ├─ ContextualPrompt.tsx (shared state management)
 │  ├─ VersionHistory.tsx
 │  ├─ VoiceSelector.tsx
-│  ├─ AudioPlayer.tsx
-│  ├─ GenerateStoryDialog.tsx
-│  └─ ApiKeyManager.tsx
+│  ├─ GenerateStoryDialog.tsx (shared contextual prompt)
+│  ├─ WelcomeDialog.tsx (new ScriptFlow onboarding)
+│  └─ TextSelector.tsx
 ├─ lib/
 │  ├─ database.ts
 │  ├─ openai.ts
@@ -127,13 +129,14 @@ src/
 ```
 
 ## Data Model (Dexie / IndexedDB)
-- DB: `StoryDatabase` (name: `StoryNarrationApp`)
+- DB: `StoryDatabase` (name: `ScriptFlowApp`)
 - Tables
   - `stories`: `id`, `title`, `content`, `contextualPrompt`, `createdAt`, `updatedAt`, `versions`, `currentVersionId`
   - `versions`: `id`, `storyId`, `content`, `timestamp`, `editType`, `editPrompt?`, `editedRange?`
   - `audioFiles`: `id`, `storyId`, `versionId`, `voiceId`, `audioBlob`, `duration`, `createdAt`
   - `settings`: `id='settings'`, `openaiApiKey?`, `elevenlabsApiKey?`, `selectedVoice?`, `preferences`
 - Hook: `stories.updating` stamps `updatedAt = new Date()`
+- **Enhanced Persistence**: Dual storage system with IndexedDB + localStorage backup for content recovery
 
 ### Types (excerpt)
 ```ts
@@ -205,7 +208,7 @@ export interface AppSettings {
 
 ## Environment
 - `.env.local`
-  - `NEXT_PUBLIC_APP_NAME="Story Narration App"`
+  - `NEXT_PUBLIC_APP_NAME="ScriptFlow"`
 - API keys are entered via UI and saved in Dexie `settings`.
 
 ## Development
@@ -213,18 +216,53 @@ export interface AppSettings {
 - Dev: `npm run dev` (runs on port 3000)
 - Build: `npm run build`
 
-## Recent Improvements
-- **UI/UX Enhancements:**
-  - Removed headings from sidebar components for cleaner appearance
-  - Story context is always editable with auto-save functionality
-  - Enhanced text editing with proper cursor management
-  - Fixed port conflicts and server stability
-  - Improved selection preservation when interacting with popovers
-- **Technical Improvements:**
-  - Better contentEditable handling to prevent cursor jumping
-  - Auto-save on input for real-time updates
-  - Enhanced popover interaction to maintain text selection
-  - Improved error handling and build stability
+## Latest Features & Improvements (2025)
+
+### **Rebranding & Content Updates**
+- **App Name**: Changed from "Narration" to "ScriptFlow"
+- **Database**: Renamed from `StoryNarrationApp` to `ScriptFlowApp`
+- **Welcome Dialog**: New streamlined onboarding with ScriptFlow branding
+- **Content Refinement**: Updated all UI text, placeholders, and messaging for clarity
+
+### **Enhanced Content Persistence**
+- **Dual Storage System**: IndexedDB + localStorage backup for maximum reliability
+- **Auto-save**: Content saved every 10 seconds + on page unload
+- **Smart Recovery**: Compares timestamps and uses most recent version on startup
+- **Cross-session**: Content persists across browser sessions and refreshes
+- **Contextual Prompt Sync**: Shared between sidebar and Generate Story dialog
+
+### **Advanced Audio Controls**
+- **Previous Generations**: Redesigned dropdown with individual play/pause controls
+- **Smart Selection Field**: Shows currently playing generation with inline controls
+- **Download Functionality**: 
+  - External download button for latest generation
+  - Individual download buttons for each previous generation
+  - Smart naming: `ScriptFlow-Generation-X-MM-DD-YYYY.wav`
+- **Audio State Management**: Proper cleanup and single-audio-at-a-time playback
+
+### **Improved Dialog & Popover System**
+- **Generate Story Dialog**: 
+  - Shared contextual prompt with sidebar
+  - API key warnings with info icons
+  - Loading states with spinning icons
+- **Edit/Generate Popovers**:
+  - ESC key support for closing
+  - Proper slash character handling and cleanup
+  - Enhanced button layouts and positioning
+  - Loading indicators in buttons
+
+### **SEO & PWA Optimization**
+- **Comprehensive Meta Tags**: Open Graph, Twitter Cards, structured data
+- **Favicon System**: Multiple formats in `src/app/` for Next.js optimization
+- **PWA Manifest**: Enhanced with proper categorization and icons
+- **Social Media**: Preview image and proper sharing metadata
+
+### **UI/UX Polish**
+- **Button Layouts**: Consistent right-aligned button groups
+- **Loading States**: Spinner icons in all generate buttons
+- **Placeholder Text**: Refined and consistent across all inputs
+- **Error States**: API key warnings in all relevant dialogs
+- **Accessibility**: Proper tooltips, disabled states, and keyboard navigation
 
 ## Remaining Work
 - Editor UX polish (keyboard/motion, mobile selection behavior)

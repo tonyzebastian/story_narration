@@ -1,14 +1,15 @@
 import './globals.css';
 import type { Metadata } from 'next';
 
-const appName = 'ScriptFlow';
+const appName = 'ScriptFlow - AI Story Creation & Voice Narration';
+const appShortName = 'ScriptFlow';
 const appDescription = 'Create and edit stories with AI assistance, then bring them to life with professional voice narration using OpenAI GPT and ElevenLabs text-to-speech.';
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://scriptflow.vercel.app';
 
 export const metadata: Metadata = {
   title: {
     default: appName,
-    template: `%s | ${appName}`,
+    template: `%s | ${appShortName}`,
   },
   description: appDescription,
   keywords: [
@@ -41,13 +42,22 @@ export const metadata: Metadata = {
     url: appUrl,
     title: appName,
     description: appDescription,
-    siteName: appName,
+    siteName: appShortName,
+    images: [
+      {
+        url: '/opengraph-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'ScriptFlow - AI-powered story creation and voice narration',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: appName,
     description: appDescription,
     creator: '@scriptflow',
+    images: ['/twitter-image.png'],
   },
   robots: {
     index: true,

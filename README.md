@@ -1,17 +1,28 @@
-# Story Creation & Narration App (OpenAI + ElevenLabs)
+# ScriptFlow - AI Story Creation & Voice Narration
 
-A Next.js app to draft/edit stories with OpenAI, then generate narrated audio using ElevenLabs. It supports selection-based edits with contextual guidelines, version history, and simple audio playback with voice selection.
+![ScriptFlow Preview](https://scriptflow.vercel.app/preview.png)
 
-## Features
-- Selection-based GPT edits with a sticky instruction popover
-- Story-wide contextual guidelines guiding all edits (auto-save on blur)
-- Version history with revert (grouped by date, hover to revert)
-- ElevenLabs TTS: list voices, generate audio, and play
-- Full-width header and bottom bar; editor + sidebar layout
-- IndexedDB (Dexie) for stories, versions, audio, and settings
-- **Latest**: Empty state options for AI generation or manual writing
-- **Latest**: Slash command (/) for quick content generation
-- **Latest**: Enhanced text editing with proper cursor management
+ScriptFlow blends AI-powered writing assistance with ElevenLabs' lifelike voice narration, so you can write, refine, and hear your stories all in one place. Whether you're crafting a novel, a podcast script, or a YouTube voiceover, ScriptFlow keeps you in the creative flow.
+
+## ✨ Key Features
+
+### **AI-Powered Writing**
+- **Selection-based editing**: Select text and provide natural language instructions for AI modifications
+- **Slash commands**: Press `/` anywhere to generate content at that position
+- **Contextual guidelines**: Set story-wide context that influences all AI edits
+- **Smart generation**: AI story generation with customizable context and prompts
+
+### **Professional Voice Narration**
+- **ElevenLabs integration**: High-quality text-to-speech with multiple voice options
+- **Audio management**: Play, pause, and download generated narrations
+- **Previous generations**: Access and replay all your audio versions
+- **Individual downloads**: Save specific generations with smart file naming
+
+### **Seamless Workflow**
+- **Real-time persistence**: Content automatically saved across browser sessions
+- **Version history**: Track changes with ability to revert to previous versions
+- **Responsive design**: Clean, distraction-free interface that works on all devices
+- **No server required**: Everything runs locally in your browser
 
 ## Tech Stack
 - Next.js 14 (App Router) + React 18
@@ -23,84 +34,166 @@ A Next.js app to draft/edit stories with OpenAI, then generate narrated audio us
 ## Requirements
 - Node.js 18+
 
-## Setup
+## 🚀 Quick Start
+
 ```bash
+# Clone and install
+git clone <repository-url>
+cd scriptflow
 npm install
-# optional
-# echo 'NEXT_PUBLIC_APP_NAME="Story Narration App"' > .env.local
+
+# Optional: Set app name
+echo 'NEXT_PUBLIC_APP_NAME="ScriptFlow"' > .env.local
+
+# Start development server
 npm run dev
 ```
-Open http://localhost:3000
 
-## API Keys
-- Click "API Keys" in the header to enter your OpenAI and ElevenLabs keys.
-- Keys are stored in the browser (IndexedDB → `settings`).
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Usage
-- **Text Editing**: Select text in the editor; a popover appears near the selection.
-- **AI Instructions**: Enter an instruction (e.g., "Make this more dramatic"). Only the selected range is replaced.
-- **Story Context**: Add story-wide guidelines in the "Story Context" tab (auto-saves when you click outside).
-- **Version History**: Manage and revert changes in "Version History" (hover to see revert options).
-- **Audio Generation**: Choose a voice and click "Generate Audio" to create narration.
-- **Empty State**: When the editor is empty, choose "Generate a basic story with AI" or "Write on my own".
-- **Slash Command**: Press `/` anywhere in the editor to generate content at that position.
+## 🔑 API Keys Setup
 
-## Recent Improvements
-- **UI/UX Enhancements:**
-  - Removed headings from sidebar components for cleaner appearance
-  - Story context is always editable with auto-save functionality
-  - Enhanced text editing with proper cursor management
-  - Fixed port conflicts and server stability
-  - Improved selection preservation when interacting with popovers
-- **Technical Improvements:**
-  - Better contentEditable handling to prevent cursor jumping
-  - Auto-save on input for real-time updates
-  - Enhanced popover interaction to maintain text selection
-  - Improved error handling and build stability
+1. **Click "Settings"** in the header to open the API keys panel
+2. **Add your keys**:
+   - **OpenAI API Key**: For AI writing assistance (get from [OpenAI](https://platform.openai.com/api-keys))
+   - **ElevenLabs API Key**: For voice narration (get from [ElevenLabs](https://elevenlabs.io/))
+3. **Secure storage**: Keys are stored locally in your browser (IndexedDB) and never sent to our servers
 
-## Troubleshooting
-- Port busy:
+## 📝 How to Use
+
+### **Getting Started**
+1. **Click "ScriptFlow"** in the header to see the welcome guide
+2. **Add your API keys** in Settings
+3. **Start writing** or generate a story with AI
+
+### **Writing & Editing**
+- **Select text** → Edit popover appears with AI assistance
+- **Press `/`** → Generate content at cursor position  
+- **Use Context for AI** → Set guidelines that influence all AI edits
+- **Generate Story** → Create complete stories from prompts
+
+### **Audio & Narration**
+- **Choose a voice** from the ElevenLabs voice selector
+- **Click Generate** to create narration of your story
+- **Play/pause** audio with the main control button
+- **Access previous generations** from the dropdown menu
+- **Download audio** files individually or get the latest version
+
+### **Version Management**
+- **Auto-save**: Content is automatically saved as you type
+- **Version history**: Track all changes in the sidebar
+- **Revert changes**: Click any version to restore it
+
+## 🆕 Latest Updates
+
+### **Enhanced Audio Experience**
+- **Individual audio controls**: Play/pause each generation independently
+- **Smart downloads**: Download latest or specific generations with descriptive filenames
+- **Improved playback**: Better audio state management and visual feedback
+
+### **Persistent Content**
+- **Dual storage system**: IndexedDB + localStorage backup for maximum reliability
+- **Cross-session persistence**: Content survives browser refreshes and restarts
+- **Smart recovery**: Automatically uses the most recent version on startup
+
+### **Polished Interface**
+- **Loading indicators**: Spinner icons in all generate buttons
+- **Keyboard shortcuts**: ESC to close popovers and dialogs
+- **Better error handling**: Clear API key warnings and status messages
+- **Responsive design**: Optimized for desktop and mobile devices
+
+## 🛠️ Development
+
+### **Available Scripts**
 ```bash
-lsof -n -iTCP:3000 -sTCP:LISTEN | awk 'NR>1 {print $2}' | xargs -r kill -9
+npm run dev          # Start development server
+npm run build        # Production build  
+npm run start        # Start production server
+npm run lint         # Run ESLint
 ```
-- Cache/module issues:
+
+### **Troubleshooting**
 ```bash
+# Port conflicts
+lsof -n -iTCP:3000 -sTCP:LISTEN | awk 'NR>1 {print $2}' | xargs -r kill -9
+
+# Clean rebuild
 rm -rf .next node_modules
 npm install
 npm run dev
-```
-- Upgrade Next.js/React (optional):
-```bash
+
+# Update dependencies (optional)
 npm i next@latest react@latest react-dom@latest
 ```
 
-## Build
+### **Environment Variables**
 ```bash
-npm run build
+# .env.local (optional)
+NEXT_PUBLIC_APP_NAME="ScriptFlow"
+NEXT_PUBLIC_APP_URL="https://scriptflow.vercel.app"
 ```
 
-## APIs & Endpoints
-- OpenAI (Chat Completions)
-  - Base: `https://api.openai.com/v1`
-  - POST `chat/completions` – used for story generation, selection edits, and slash commands
-- ElevenLabs
-  - Base: `https://api.elevenlabs.io/v1`
-  - GET `voices` – fetch available voices
-  - POST `text-to-speech/{voice_id}` – generate audio from text
+## 🔗 API Integration
 
-## Folder Structure
+### **OpenAI API**
+- **Endpoint**: `https://api.openai.com/v1/chat/completions`
+- **Model**: GPT-4o-mini for optimal performance and cost
+- **Usage**: Story generation, text editing, content creation
+
+### **ElevenLabs API**  
+- **Voices**: `GET /v1/voices` - Fetch available voice options
+- **TTS**: `POST /v1/text-to-speech/{voice_id}` - Generate audio narration
+- **Format**: Returns high-quality audio files for download and playback
+
+---
+
+## 📄 License
+
+This project is open source and available under the [MIT License](LICENSE).
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## ⭐ Support
+
+If you find ScriptFlow helpful, please consider giving it a star on GitHub!
+
+## 🏗️ Architecture
+
+### **Tech Stack**
+- **Framework**: Next.js 14 with App Router
+- **UI**: React 18 + TypeScript + Tailwind CSS
+- **Components**: shadcn/ui (Radix UI primitives)
+- **Storage**: Dexie (IndexedDB wrapper) for local persistence
+- **AI**: OpenAI GPT-4o-mini for text generation
+- **Voice**: ElevenLabs API for text-to-speech
+
+### **Project Structure**
 ```
 src/
-├─ app/                    # Next.js App Router
-├─ components/             # React components
-│  ├─ ui/                 # shadcn/ui components
-│  ├─ Header.tsx          # App header with API keys
-│  ├─ StoryEditor.tsx     # Main text editor
-│  ├─ PromptBox.tsx       # Selection-based edit popover
-│  ├─ ContextualPrompt.tsx # Story context editor
-│  ├─ VersionHistory.tsx  # Version management
-│  ├─ BottomBar.tsx       # Audio controls
-│  └─ GenerateStoryDialog.tsx # AI story generation modal
-├─ lib/                   # Utilities and API clients
-└─ types/                 # TypeScript definitions
+├─ app/                     # Next.js App Router
+│  ├─ favicon.ico          # Favicons and SEO assets
+│  ├─ opengraph-image.png  # Social media preview
+│  └─ layout.tsx           # Root layout with metadata
+├─ components/
+│  ├─ ui/                  # shadcn/ui base components
+│  ├─ Header.tsx           # App header with settings
+│  ├─ StoryEditor.tsx      # Main contentEditable editor
+│  ├─ PromptBox.tsx        # AI editing popover
+│  ├─ BottomBar.tsx        # Audio controls & downloads
+│  ├─ GenerateStoryDialog.tsx # AI story generation
+│  └─ WelcomeDialog.tsx    # Onboarding experience
+├─ lib/
+│  ├─ database.ts          # Dexie IndexedDB setup
+│  ├─ openai.ts           # OpenAI API client
+│  └─ elevenlabs.ts       # ElevenLabs API client
+└─ types/
+   └─ index.ts             # TypeScript definitions
 ```
+
+### **Data Storage**
+- **Stories**: Content, context, versions, metadata
+- **Audio Files**: Generated narrations with voice info
+- **Settings**: API keys, preferences, voice selection
+- **Versions**: Complete edit history with revert capability
