@@ -36,7 +36,7 @@ export default function ContextualPrompt({ value, onChange, placeholder }: Conte
         onChange={(e) => setLocalValue(e.target.value)}
         onBlur={handleBlur}
         placeholder={placeholder || "Give AI extra context like style, tone, pacing, audience etc."}
-        className="w-full h-full max-h-96 resize-none shadow-none border-gray-200 hover:border-gray-300 focus:border-gray-400 focus:ring-0 focus-visible:ring-0 focus-visible:outline-none transition-colors"
+        className="w-full min-h-[650px] resize-none shadow-none border-gray-200 hover:border-gray-300 focus:border-gray-400 focus:ring-0 focus-visible:ring-0 focus-visible:outline-none transition-colors"
 
       />
     </div>
